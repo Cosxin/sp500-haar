@@ -6,15 +6,29 @@
     </head>
     <style>
     .background {
-  	fill: #eee;
+  		fill: #eee;
 	}
 
 	line {
-  	stroke: #fff;
+  		stroke: #fff;
 	}
-
 	text.active {
-  	fill: red;
+  		fill: red;
+	}
+	.brush {
+		fill:purple;
+	}
+	.brush rect.extent {
+  		fill: #2ca25f;
+  		fill-opacity: .125;
+  		stroke:purple;
+	}
+	.brush rect.background{
+		fill: #e5f5f9;
+	}
+	.brush .resize path {
+  		fill: #eee;
+  		stroke: #666;
 	}
 
 </style>
@@ -25,15 +39,19 @@
     <script>
 
     var margin = {top:50,right:0,bottom:0,left:80},
-    width = 1050,
-    height = 1050,
-    n = 50,
-    MaxS = 60;
-    Ns = 10
-    sliceX1 = 0,
-    sliceX2 = 10,
-    sliceY1 = 0,
-    sliceY2 = 10;
+    	width = 1050,
+    	height = 1050,
+    	bwidth = 30,
+    	bheight = 30,
+    	awidth = 10,
+    	aheight = 10,
+	    n = 50,
+	    MaxS = 60,
+	    Ns = 10,
+	    sliceX1 = 0,
+	    sliceX2 = 30,
+	    sliceY1 = 0,
+	    sliceY2 = 30;
 
     var matrix = [];
     var wavelet = [];
@@ -46,10 +64,9 @@
     
     var x = d3.scale.ordinal().rangeBands([0,width]),
     	y = d3.scale.ordinal().rangeBands([0,height]),
-    //var x = d3.scale.linear().domain([0,width]),
-        //z = d3.scale.category10().domain([-1,1]);
         z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']); //colorbrewer2.0 org
-    	
+
+
     var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     var nums = "0123456789".split("");
     var alphanumeric = d3.range(n).map(function(d,i){return alphabet[Math.floor(i/10)] + nums[Math.floor(i%10)];});
@@ -71,23 +88,56 @@
 //	x.domain(orders.correlation_x);
 //	y.domain(orders,correlation_y);
 
+
+    var bs = d3.scale.ordinal().domain([0,60]).rangeRoundPoints([0,width]);
+
+
+	var brushX = d3.svg.brush().x(bs),
+		brushY = d3.svg.brush().y(bs);
+	var xAxis = d3.svg.axis().scale(bs).orient("top")
+		yAxis = d3.svg.axis().scale(bs).orient("left");
+
+
 	var svg = d3.select('body').append('svg')
-	    .attr('width', width + margin.left + margin.right)
-	    .attr('height', height + margin.top + margin.bottom)
-	    //.style('margin-left', -margin.left + "px")
+	    .attr('width', width + margin.left + margin.right + bwidth)
+	    .attr('height', height + margin.top + margin.bottom + bheight)
 	  .append('g')
 	    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-	svg.append("rect")
+	var brushx = svg
+		 .append("g")
+		 .attr('transform', 'translate(' + bwidth + ',' + 0 + ')')
+		 .attr("class","brush x")
+		 //.attr("width",width)
+		 .call(brushX);
+	brushx.selectAll("rect")
+		 .attr("height",bheight)
+		 .style("visibility","visible");
+	
+
+	var brushy = svg.append("g")
+		.attr('transform', 'translate(' + 0 + ',' + bheight + ')')
+		.attr("class", "brush y")
+		//.attr("height",height)
+		.call(brushY);
+	brushy.selectAll("rect")
+		 .attr("width",bwidth)
+		 .style("visibility","visible");
+
+
+	var panel = svg.append("g")
+		.attr('transform', 'translate(' + bwidth + ',' + bheight  + ')')
+
+	panel.append("rect")
 		.attr('class',"background")
 		.attr("width",width)
-		.attr("height",height);
+		.attr("height",height)
 
 	redraw();
 
 	function redraw(){
 
-	row = svg.selectAll(".row")
+	row = panel.selectAll(".row")
 		.data(matrix)
 	   .enter().append("g")
 	    .attr("class","row")
@@ -103,9 +153,12 @@
 	    .attr("font-size","9px")
 	    .attr("dy", ".16em")
 	    .attr("text-anchor", "end")
-	    .text(function(d, i) { return alphanumeric[i]; });
+	    .text(function(d, i) { return alphanumeric[i]; })
+	    .style("-webkit-user-select","none")
+		.style("-moz-user-select","none");
 
-	column = svg.selectAll(".column")
+
+	column = panel.selectAll(".column")
 		.data(matrix)
 	   .enter().append("g")
 	   	.attr('class',"column")
@@ -120,7 +173,9 @@
 		.attr('dy', ".32em")
 		.attr('font-size','9px' )
 		.attr('text-anchor','start')
-		.text(function(d,i){return alphanumeric[i];});
+		.text(function(d,i){return alphanumeric[i];})
+		.style("-webkit-user-select","none")
+		.style("-moz-user-select","none");
 
 }
 	function frow(row){
@@ -134,8 +189,8 @@
 		     .style("fill",function(d){return z(d.z);})
 		     .on("mouseover",mouseover)
 		     .on("mouseout",mouseout);
-
 }
+
 
   function order(value) {
     x.domain(orders[value]);
@@ -155,11 +210,10 @@
   }
 
   function mouseover(p){
-
     d3.selectAll(".row text").classed("active", function(d, i) { return i == p.x; });
     d3.selectAll(".column text").classed("active", function(d, i) { return i == p.y; });
-  
   }
+
   function mouseout() {
     d3.selectAll("text").classed("active", false);
   }
@@ -181,6 +235,7 @@
 		});
 		d3.selectAll(".cell").style("fill",function(d){return z(matrix[d.x][d.y].z);});
 	}
+
 	function correlation(wave1,wave2){
 		var mu1 = d3.mean(wave1);
 		var mu2 = d3.mean(wave2);
