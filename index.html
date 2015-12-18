@@ -3,6 +3,7 @@
     <head>
         <title>D3.js Charts</title>
 	<script src="./d3.min.js"></script>
+	<script src="./wavelet.js"></script>
     </head>
     <style>
     .background {
@@ -64,32 +65,40 @@
 	    sliceX2 = 30,
 	    sliceY1 = 0,
 	    sliceY2 = 30;
-	    //pwidth = width - bwidth,
-	    //pheight = height - bheight;
+
+ 	//Handcrafted 'code'
+	var sh50 = [600000,600010,600015,600016,600018,600028,600030,600036,600048,601006,601088,601118
+				,600050,600089,600104,600109,600111,600150,600196,600256,600332,600372,600406,600518
+				,600519,600585,600637,600690,600703,600832,600999,600887,600837,601288,601169,601166
+				,601299,601318,601328,601628,601766,601901,601601,601688,601857,601998,601989,601818
+				,601668,601398]; 
+	//ri le gou le hai de handle 60 = sh, 00=sz, 300=caonimadechuangyeban......
+	var url = "http://hq.sinajs.cn/list=";
 
     var matrix = [];
-    var wavelet = [];
+    var wavelet1 = new Wavelet.createNew(50,60,"a");
+    var	wavelet2 = new Wavelet.createNew(50,60,"b");
 
-    for(i = -1;++i<n;){
-    	wavelet[i] = [];
-    	for(j = -1;++j<MaxS;)
-    		wavelet[i].push(Math.random());
-    }
-    
+    wavelet1.injectCodes(sh50).setAttackSpeed(3).setUrl(url);//.fire();
+    wavelet2.injectCodes(sh50).setAttackSpeed(3).setUrl(url).fire();
+
     var x = d3.scale.ordinal().rangeBands([0,width]),
     	y = d3.scale.ordinal().rangeBands([0,height]),
-        z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']); //colorbrewer2.0 org
+    	//colorbrewer2.0.org
+        z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']); 
 
-
+    // NoobCode101
     var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     var nums = "0123456789".split("");
     var alphanumeric = d3.range(n).map(function(d,i){return alphabet[Math.floor(i/10)] + nums[Math.floor(i%10)];});
 	
 	for(i = -1; ++i<n; ){
-		//matrix i is a row
+		// Don t change the order of i,j
+		// Otherwise you will die
     	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:Math.abs(Math.sin(i + j))};});
     	matrix[i].name = alphanumeric[i];
 	}
+
 
 	var orders = {
 		name: d3.range(n).sort(function(a,b){return d3.ascending(matrix[a].name,matrix[b].name);}),
@@ -100,15 +109,12 @@
 	x.domain(d3.range(n));
 	y.domain(d3.range(n));
 //	x.domain(orders.correlation_x);
-//	y.domain(orders,correlation_y);
-
-
-    //var bs = d3.scale.ordinal().domain(d3.range(60)).rangeRoundPoints([0,width]);
     var bs = d3.scale.linear().domain([0,n]).rangeRound([0,width]);
-
 
 	var brushX = d3.svg.brush().x(bs).on("brush",brushed).on("brushend",brushed),
 		brushY = d3.svg.brush().y(bs).on("brush",brushed).on("brushend",brushed);
+
+	//What do the two lines below do?
 	var xAxis = d3.svg.axis().scale(bs).orient("top")
 		yAxis = d3.svg.axis().scale(bs).orient("left");
 
@@ -206,7 +212,6 @@
 		     .on("mouseout",mouseout);
 }
 
-brushX.extent()[0] = 0;
   function order(value) {
     x.domain(orders[value]);
 
@@ -225,8 +230,8 @@ brushX.extent()[0] = 0;
   }
 
   function mouseover(p){
-    d3.selectAll(".row text").classed("active", function(d, i) { return i == p.x; });
-    d3.selectAll(".column text").classed("active", function(d, i) { return i == p.y; });
+    d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
+    d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
   }
 
   function mouseout() {
@@ -240,6 +245,7 @@ brushX.extent()[0] = 0;
   	if (x[0] == x[1]) {x[0]=0;x[1]=width;}
   	if (y[0] == y[1]) {y[0]=0;y[1]=height;}
 
+  	//noobcode1001
   	d3.selectAll(".cell").classed("offselected",function(d){
   		return (d.x) < x[0] - .5 || (d.x) > x[1] - .5 || (d.y) > y[1] -.5 || (d.y) < y[0] -.5 ;
   	});
@@ -248,32 +254,23 @@ brushX.extent()[0] = 0;
   	});
   }
 
-	//auto pull data 
-	var task = setInterval(function(){
-		wavelet.forEach(function(d){
-			//if there is data available
-			d.shift();
-			d.push(Math.random());
-			//otherwise, use last tick's data
-			//d.shift();
-			//d.push(d[d.length-1]);
-		});
-		console.log("new data recieved");
+//auto pull data 
+ var task = setInterval(function(){
 		updateZ(correlation);
 	},2000);
 
 	function updateZ(func){
-		wavelet.forEach(function(d,i){
-			wavelet.forEach(function(k,j){
+		wavelet1.buffer.forEach(function(d,i){
+			wavelet2.buffer.forEach(function(k,j){
 				matrix[i][j].z = func(d.slice(sliceX1,sliceX2),k.slice(sliceY1,sliceY2));
 			});
 		});
+
 		d3.selectAll(".cell").style("fill",function(d){return z(matrix[d.x][d.y].z);});
 	}
 
-	d3.selectAll(".cell").each(function(d){console.log(d.x);});
-
 	function correlation(wave1,wave2){
+
 		var mu1 = d3.mean(wave1);
 		var mu2 = d3.mean(wave2);
 		var sig1 = d3.deviation(wave1);
@@ -282,7 +279,33 @@ brushX.extent()[0] = 0;
 		for(var i = -1; ++i < d3.min([wave1.length,wave2.length]); )
 			sum += (wave1[i] - mu1) * (wave2[i] - mu2);
 		return sum / ((d3.min([wave1.length,wave2.length]) - 1) * sig2 * sig1);
-
 	}
+
+
+
+	/*
+	浦发银行 (600000)	包钢股份 (600010)	华夏银行 (600015)
+	民生银行 (600016)	上港集团 (600018)	中国石化 (600028)
+	中信证券 (600030)	招商银行 (600036)	保利地产 (600048)
+	中国联通 (600050)	特变电工 (600089)	上汽集团 (600104)
+	国金证券 (600109)	包钢稀土 (600111)	中国船舶 (600150)
+	复星医药 (600196)	广汇能源 (600256)	白云山 (600332)
+	中航电子 (600372)	国电南瑞 (600406)	康美药业 (600518)
+	贵州茅台 (600519)	海螺水泥 (600585)	百视通 (600637)
+	青岛海尔 (600690)	三安光电 (600703)	东方明珠 (600832)
+	海通证券 (600837)	伊利股份 (600887)	招商证券 (600999)
+	大秦铁路 (601006)	中国神华 (601088)	海南橡胶 (601118)
+	兴业银行 (601166)	北京银行 (601169)	农业银行 (601288)
+	中国北车 (601299)	中国平安 (601318)	交通银行 (601328)
+	工商银行 (601398)	中国太保 (601601)	中国人寿 (601628)
+	中国建筑 (601668)	华泰证券 (601688)	中国南车 (601766)
+	光大银行 (601818)	中国石油 (601857)	方正证券 (601901)
+	中国重工 (601989)	中信银行 (601998)
+	*/
+
+
     </script>
 </html>
+
+
+
