@@ -233,28 +233,30 @@ brushX.extent()[0] = 0;
     d3.selectAll("text").classed("active", false);
   }
 
-  var correction = x.rangeBand() / 2;
 
   function brushed(){
   	var x = brushX.extent();
   	var y = brushY.extent();
   	if (x[0] == x[1]) {x[0]=0;x[1]=width;}
   	if (y[0] == y[1]) {y[0]=0;y[1]=height;}
+
   	d3.selectAll(".cell").classed("offselected",function(d){
   		return (d.x) < x[0] - .5 || (d.x) > x[1] - .5 || (d.y) > y[1] -.5 || (d.y) < y[0] -.5 ;
   	});
   	d3.selectAll(".cell").classed("selected",function(d){
   		return (d.x) > x[0] - .5 && (d.x) < x[1] - .5 && (d.y) < y[1] -.5 && (d.y) > y[0] -.5 ;
   	});
-
-
   }
 
 	//auto pull data 
 	var task = setInterval(function(){
 		wavelet.forEach(function(d){
+			//if there is data available
 			d.shift();
 			d.push(Math.random());
+			//otherwise, use last tick's data
+			//d.shift();
+			//d.push(d[d.length-1]);
 		});
 		console.log("new data recieved");
 		updateZ(correlation);
