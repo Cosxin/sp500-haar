@@ -80,8 +80,8 @@
     var wavelet1 = new Wavelet.createNew(50,60,"a");
     var	wavelet2 = new Wavelet.createNew(50,60,"b");
 
-    wavelet1.injectCodes(sh50).setAttackSpeed(3).setUrl(url).fire();
-    wavelet2.injectCodes(sh50).setAttackSpeed(3).setUrl(url).fire();
+    wavelet1.injectCodes(sh50).setAttackSpeed(3).setUrl(url).stimulate();//.fire()
+    wavelet2.injectCodes(sh50).setAttackSpeed(3).setUrl(url).stimulate();//.fire()
 
     var x = d3.scale.ordinal().rangeBands([0,width]),
     	y = d3.scale.ordinal().rangeBands([0,height]),

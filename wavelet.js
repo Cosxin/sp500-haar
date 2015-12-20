@@ -52,12 +52,12 @@ var Wavelet = {
 			console.log(name + " started pull data from " + baseurl);
 			task = setInterval(function(){
 
-				d3.select("head").select("#reload"+name).remove(); 
+				d3.select("head").select("#reload_"+name).remove(); 
 				////////
 				// dont use same id
 				// or if wavelet 1 create a script, wavelet 2 can remove it imediately
 				////////////
-				d3.select("head").append("script").attr("id","reload"+name).attr("src",url).attr("onload",
+				d3.select("head").append("script").attr("id","reload_"+name).attr("src",url).attr("onload",
 					function(){
 						console.log("new data recieved");
 						wavelet.buffer.forEach(function(d,i){
@@ -67,6 +67,16 @@ var Wavelet = {
 							d.shift();
 						});
 					});
+			},attack_speed);
+		};
+		
+		wavelet.stimulate = function(){
+			task = setInterval(function(){
+				console.log("new data recieved");
+				wavelet.buffer.forEach(function(d,i){
+					d.push(Math.random());
+					d.shift();
+				});
 			},attack_speed);
 		};
 
