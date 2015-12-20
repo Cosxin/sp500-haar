@@ -2,26 +2,33 @@
 
 var Wavelet = {
 
+	names : [],
+	sync_loc : Number,
 	createNew : function(n,maxS,name){
+			// if (Wavelet.names.include(name)) {
+			// 	c
+			// }
 		var wavelet = {};
-		wavelet.n = n;
-		wavelet.maxS = maxS;
-		wavelet.attack_speed = 3000;
-		wavelet.baseurl = "http://hq.sinajs.cn/list=";
+		var n = n;
+		var maxS = maxS;
+		var attack_speed = 3000;
+		var baseurl = "http://hq.sinajs.cn/list=";
 		wavelet.codes = [];
 		wavelet.buffer = [];
-		wavelet.name = name;
-
+		var name = name;
+		var task = null;
+		var price = [];
 		console.log("wavelet " + name + " created");
 
-		for(i = -1; ++i < wavelet.n;){
+		for(i = -1; ++i < n;){
     		wavelet.buffer[i] = [];
-    		for(j = -1; ++j < wavelet.maxS;){
+    		for(j = -1; ++j < maxS;){
     			wavelet.buffer[i].push(Math.random());
     		}
 		}
 
 		wavelet.injectCodes = function(codes){
+			//customize
 			wavelet.codes = codes.map(function(d){
 				prefix = d.toString().substr(0,2);
 				if(prefix == "60") return "sh" + d;
@@ -32,23 +39,36 @@ var Wavelet = {
 			return wavelet;
 		};
 		wavelet.setAttackSpeed = function(second){
-			wavelet.attack_speed = 1000 * second;
+			attack_speed = 1000 * second;
 			return wavelet;
 		};
 		wavelet.setUrl = function(url){
-			wavelet.baseurl = url;
+			baseurl = url;
 			return wavelet;
 		};
 		wavelet.fire = function(){
-			console.log(wavelet.name + " started pull data from " + wavelet.baseurl);
-			var task = setInterval(function(){
-				wavelet.buffer.forEach(function(d){
-					d.shift();
-					d.push(Math.random());
-				});
-			},wavelet.attack_speed);
-		};
+			var url = baseurl + wavelet.codes.toString();
 
+			console.log(name + " started pull data from " + baseurl);
+			task = setInterval(function(){
+
+				d3.select("head").select("#reload"+name).remove(); 
+				////////
+				// dont use same id
+				// or if wavelet 1 create a script, wavelet 2 can remove it imediately
+				////////////
+				d3.select("head").append("script").attr("id","reload"+name).attr("src",url).attr("onload",
+					function(){
+						console.log("new data recieved");
+						wavelet.buffer.forEach(function(d,i){
+							var s = eval("hq_str_"+wavelet.codes[i]).split(","); 
+							//console.log(s[0] + " " + s[1]);
+							d.push(+s[1]);
+							d.shift();
+						});
+					});
+			},attack_speed);
+		};
 
 		return wavelet;
 	}

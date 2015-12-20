@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>D3.js Charts</title>
+    <h2>SH50 Correlation Matrix</h2>
 	<script src="./d3.min.js"></script>
 	<script src="./wavelet.js"></script>
     </head>
@@ -46,25 +47,25 @@
 ?
 </style>
     <body>
-    h
+    
     </body>
 
     <script>
 
-    var margin = {top:50,right:0,bottom:0,left:80},
-    	width = 1050,
-    	height = 1050,
-    	bwidth = 30,
-    	bheight = 30,
+    var margin = {top:0,right:0,bottom:0,left:80},
+    	width = 640,
+    	height = 640,
+    	bwidth = 40,
+    	bheight = 40,
     	awidth = 10,
     	aheight = 10,
 	    n = 50,
 	    MaxS = 60,
 	    Ns = 10,
-	    sliceX1 = 0,
-	    sliceX2 = 30,
-	    sliceY1 = 0,
-	    sliceY2 = 30;
+	    //sliceX1 = 0,
+	    sliceX2 = 3,
+	    //sliceY1 = 0,
+	    sliceY2 = 3;
 
  	//Handcrafted 'code'
 	var sh50 = [600000,600010,600015,600016,600018,600028,600030,600036,600048,601006,601088,601118
@@ -79,13 +80,13 @@
     var wavelet1 = new Wavelet.createNew(50,60,"a");
     var	wavelet2 = new Wavelet.createNew(50,60,"b");
 
-    wavelet1.injectCodes(sh50).setAttackSpeed(3).setUrl(url);//.fire();
+    wavelet1.injectCodes(sh50).setAttackSpeed(3).setUrl(url).fire();
     wavelet2.injectCodes(sh50).setAttackSpeed(3).setUrl(url).fire();
 
     var x = d3.scale.ordinal().rangeBands([0,width]),
     	y = d3.scale.ordinal().rangeBands([0,height]),
     	//colorbrewer2.0.org
-        z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']); 
+        z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']).clamp(true); 
 
     // NoobCode101
     var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -96,7 +97,7 @@
 		// Don t change the order of i,j
 		// Otherwise you will die
     	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:Math.abs(Math.sin(i + j))};});
-    	matrix[i].name = alphanumeric[i];
+    	matrix[i].name = sh50[i];
 	}
 
 
@@ -134,7 +135,6 @@
 	brushx.selectAll("rect")
 		 .attr("height",bheight)
 		 .style("visibility","visible");
-	
 
 	var brushy = svg.append("g")
 		.attr('transform', 'translate(' + 0 + ',' + bheight + ')')
@@ -144,6 +144,8 @@
 	brushy.selectAll("rect")
 		 .attr("width",bwidth)
 		 .style("visibility","visible");
+
+	d3.selectAll(".resize").select("rect").attr("width",3);
 
 
 	var panel = svg.append("g")
@@ -174,7 +176,7 @@
 	    .attr("font-size","9px")
 	    .attr("dy", ".16em")
 	    .attr("text-anchor", "end")
-	    .text(function(d, i) { return alphanumeric[i]; })
+	    .text(function(d, i) { return sh50[i]; })
 	    .style("-webkit-user-select","none")
 		.style("-moz-user-select","none");
 
@@ -194,7 +196,7 @@
 		.attr('dy', ".32em")
 		.attr('font-size','9px' )
 		.attr('text-anchor','start')
-		.text(function(d,i){return alphanumeric[i];})
+		.text(function(d,i){return sh50[i];})
 		.style("-webkit-user-select","none")
 		.style("-moz-user-select","none");
 
@@ -262,11 +264,12 @@
 	function updateZ(func){
 		wavelet1.buffer.forEach(function(d,i){
 			wavelet2.buffer.forEach(function(k,j){
-				matrix[i][j].z = func(d.slice(sliceX1,sliceX2),k.slice(sliceY1,sliceY2));
+				matrix[i][j].z = func(d.slice(-sliceX2),k.slice(-sliceY2));
+
 			});
 		});
 
-		d3.selectAll(".cell").style("fill",function(d){return z(matrix[d.x][d.y].z);});
+		d3.selectAll(".cell").style("fill",function(d){return isNaN(matrix[d.x][d.y].z)? "#d7191c" : z(matrix[d.x][d.y].z);});
 	}
 
 	function correlation(wave1,wave2){
@@ -296,7 +299,7 @@
 	海通证券 (600837)	伊利股份 (600887)	招商证券 (600999)
 	大秦铁路 (601006)	中国神华 (601088)	海南橡胶 (601118)
 	兴业银行 (601166)	北京银行 (601169)	农业银行 (601288)
-	中国北车 (601299)	中国平安 (601318)	交通银行 (601328)
+	！中国北车 (601299)！	中国平安 (601318)	交通银行 (601328)
 	工商银行 (601398)	中国太保 (601601)	中国人寿 (601628)
 	中国建筑 (601668)	华泰证券 (601688)	中国南车 (601766)
 	光大银行 (601818)	中国石油 (601857)	方正证券 (601901)
