@@ -4,62 +4,68 @@ var Wavelet = {
 
 	names : [],
 	sync_loc : Number,
+	API : {
+		sina : "http://hq.sinajs.cn/list="
+	},
+
 	createNew : function(n,maxS,name){
-			// if (Wavelet.names.include(name)) {
-			// 	c
-			// }
+		if(name && n && maxS == undefined)
+			return;
+		if (Wavelet.names.includes(name)) {
+			console.log("name exists");
+			return;
+		}
 		var wavelet = {};
 		var n = n;
 		var maxS = maxS;
 		var attack_speed = 3000;
-		var baseurl = "http://hq.sinajs.cn/list=";
-		wavelet.codes = [];
-		wavelet.buffer = [];
+		var baseurl = Wavelet.API.sina;
+		var codes = [];
+		var buffer = [];
 		var name = name;
 		var task = null;
-		var price = [];
+		var rcv = false;
 		console.log("wavelet " + name + " created");
 
 		for(i = -1; ++i < n;){
-    		wavelet.buffer[i] = [];
-    		for(j = -1; ++j < maxS;){
-    			wavelet.buffer[i].push(Math.random());
-    		}
+    		buffer[i] = d3.range(maxS).map(function(){return 0;});
 		}
 
-		wavelet.injectCodes = function(codes){
+		wavelet.injectCodes = function(code, cb){
 			//customize
-			wavelet.codes = codes.map(function(d){
+			codes = code.map(function(d){
 				prefix = d.toString().substr(0,2);
 				if(prefix == "60") return "sh" + d;
 				if(prefix == "00") return "sz" + d;
 				if(prefix == "30") return "sz" + d;
 				return d;
 			});
-			return wavelet;
+			return wavelet.testCodes(codes,cb);
 		};
 
-		wavelet.testCodes = function(){
-			var url = baseurl + wavelet.codes.toString();
-			var tickers = [];
+		wavelet.testCodes = function(code,cb){
+			var url = baseurl + codes.toString();
+			var tickers = []; 
 			d3.select("head").append("script").attr("id","#test_"+ name).attr("src",url).attr("onload",
 				function(){
 					//need to Sync with matrix binding
 							setTimeout(function(){
 								console.log("tested codes try");
 								try{
-									wavelet.codes.forEach(function(d,i){
+									codes.forEach(function(d,i){
 										var s = eval("hq_str_" + d).split(",");
 										tickers.push(s[0]);
-										c = true;
+
 									});
 								}catch(e){
 									console.log(e);
+									tickers = code;
 								}
+								cb(tickers);
 							}, 1000);
 				});
 			d3.select("head").select("#test_"+ name).remove();
-			return tickers;
+			return wavelet;
 		}
 		wavelet.setAttackSpeed = function(second){
 			attack_speed = 1000 * second;
@@ -70,7 +76,7 @@ var Wavelet = {
 			return wavelet;
 		};
 		wavelet.fire = function(){
-			var url = baseurl + wavelet.codes.toString();
+			var url = baseurl + codes.toString();
 
 			console.log(name + " started pull data from " + baseurl);
 			task = setInterval(function(){
@@ -82,29 +88,38 @@ var Wavelet = {
 				////////////
 				d3.select("head").append("script").attr("id","reload_"+name).attr("src",url).attr("onload",
 					function(){
-						console.log("new data recieved");
-						wavelet.buffer.forEach(function(d,i){
-							var s = eval("hq_str_"+wavelet.codes[i]).split(","); 
-							//console.log(s[0] + " " + s[1]);
-							d.push(+s[1]);
+						console.log(name + "new data recieved");
+						buffer.forEach(function(d,i){
+							var s = eval("hq_str_"+codes[i]).split(","); 
+							d.push(+s[3]); //s[1] = open s[2] = close 
+							rcv = true;
 							d.shift();
 						});
 					});
 			},attack_speed);
+			return wavelet;
 		};
 		
 		wavelet.stimulate = function(){
 			task = setInterval(function(){
-				console.log("new data recieved");
-				wavelet.buffer.forEach(function(d,i){
+				console.log(name + "new data recieved");
+				buffer.forEach(function(d,i){
 					d.push(Math.random());
 					d.shift();
 				});
 			},attack_speed);
+			return wavelet;
+		};
+		wavelet.getData = function(k){
+			//return last k data
+			if(k == undefined)
+				return buffer.map(function(d){return d;});
+			return buffer.map(function(d){return d.slice(-k);});
 		};
 
-
-
+		wavelet.stop = function(){
+			clearInterval(task);
+		};
 		return wavelet;
 	}
 

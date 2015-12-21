@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
     <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
         <title>D3.js Charts</title>
-    <h2>SH50 Correlation Matrix</h2>
+    <h2>上证50 Correlation Matrix</h2>
 	<script src="./d3.min.js"></script>
 	<script src="./wavelet.js"></script>
     </head>
@@ -19,6 +20,8 @@
 	}
 	text {
 		-webkit-user-select: none;
+		user-select: none;
+		/* how to cancel mouseover*/
 	}
 	.cell {
 	}
@@ -75,16 +78,17 @@
 				,601299,601318,601328,601628,601766,601901,601601,601688,601857,601998,601989,601818
 				,601668,601398]; 
 
-	//ri le gou le hai de handle 60 = sh, 00=sz
+	//ri le gou le hai de handle 60 = sh, 00=sz why 000000 belongs to sh
 	var url = "http://hq.sinajs.cn/list=";
     var matrix = [];
     var wavelet1 = new Wavelet.createNew(50,MaxS,"a");
     var	wavelet2 = new Wavelet.createNew(50,MaxS,"b");
+//   var tickers1,tickers2;
 
-    var tickers1 = wavelet1.injectCodes(sh50).testCodes();
-    wavelet1.setAttackSpeed(5).setUrl(url).fire();
-    var tickers2 = wavelet2.injectCodes(sh50).testCodes();
-    wavelet2.setAttackSpeed(5).setUrl(url).fire();
+	for(i = -1; ++i<n; ){
+		// Don t change the order of i,j, sexy bug
+    	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:Math.abs(Math.sin(i + j))};});
+	}
 
     var x = d3.scale.ordinal().rangeBands([0,width]),
     	y = d3.scale.ordinal().rangeBands([0,height]),
@@ -95,12 +99,18 @@
     // var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     // var nums = "0123456789".split("");
     // var alphanumeric = d3.range(n).map(function(d,i){return alphabet[Math.floor(i/10)] + nums[Math.floor(i%10)];});
-	
-	for(i = -1; ++i<n; ){
-		// Don t change the order of i,j, sexy bug
-    	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:Math.abs(Math.sin(i + j))};});
-    	matrix[i].name = sh50[i];
-	}
+
+	wavelet1.injectCodes(sh50,function(tickers){
+		matrix.forEach(function(d,i){
+			d.name = tickers[i];
+		});
+		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-
+	});
+
+	// Fire = real data
+    wavelet1.setAttackSpeed(5).setUrl(url).stimulate();//.fire(); 
+    wavelet2.injectCodes(sh50,function(tickers){});
+    wavelet2.setAttackSpeed(5).setUrl(url).stimulate();//.fire();
 
 	//wrong
 	var orders = {
@@ -111,13 +121,13 @@
 	};
 	x.domain(d3.range(n));
 	y.domain(d3.range(n));
-//	x.domain(orders.correlation_x);
+
     var bs = d3.scale.linear().domain([0,n]).rangeRound([0,width]);
 
 	var brushX = d3.svg.brush().x(bs).on("brush",brushed).on("brushend",brushed),
 		brushY = d3.svg.brush().y(bs).on("brush",brushed).on("brushend",brushed);
 
-	//What do the two lines below do?
+	//gan ma yong de
 	var xAxis = d3.svg.axis().scale(bs).orient("top")
 		yAxis = d3.svg.axis().scale(bs).orient("left");
 
@@ -160,7 +170,7 @@
 		.attr("width",width)
 		.attr("height",height)
 
-	redraw();
+//	redraw();
 
 	function redraw(){
 
@@ -262,16 +272,18 @@
 	},2000);
 
 	function updateZ(func){
-		wavelet1.buffer.forEach(function(d,i){
-			wavelet2.buffer.forEach(function(k,j){
-				matrix[i][j].z = func(d.slice(-sliceX2),k.slice(-sliceY2));
 
+		var w1 = wavelet1.getData(sliceX2);
+		var w2 = wavelet2.getData(sliceY2);
+		w1.forEach(function(d,i){
+			w2.forEach(function(k,j){
+				matrix[i][j].z = func(d,k);
 			});
 		});
 
 		d3.selectAll(".cell").style("fill",function(d){return isNaN(matrix[d.x][d.y].z)? "#d7191c" : z(matrix[d.x][d.y].z);});
 	}
-
+//Module
 	function correlation(wave1,wave2){
 
 		var mu1 = d3.mean(wave1);
@@ -283,7 +295,9 @@
 			sum += (wave1[i] - mu1) * (wave2[i] - mu2);
 		return sum / ((d3.min([wave1.length,wave2.length]) - 1) * sig2 * sig1);
 	}
+	function haar(wave1,wave2){
 
+	}
 
 
 	/*
