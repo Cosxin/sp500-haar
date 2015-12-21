@@ -1,5 +1,5 @@
 //TODO Sync part
-
+//Customized for sina api
 var Wavelet = {
 
 	names : [],
@@ -38,6 +38,29 @@ var Wavelet = {
 			});
 			return wavelet;
 		};
+
+		wavelet.testCodes = function(){
+			var url = baseurl + wavelet.codes.toString();
+			var tickers = [];
+			d3.select("head").append("script").attr("id","#test_"+ name).attr("src",url).attr("onload",
+				function(){
+					//need to Sync with matrix binding
+							setTimeout(function(){
+								console.log("tested codes try");
+								try{
+									wavelet.codes.forEach(function(d,i){
+										var s = eval("hq_str_" + d).split(",");
+										tickers.push(s[0]);
+										c = true;
+									});
+								}catch(e){
+									console.log(e);
+								}
+							}, 1000);
+				});
+			d3.select("head").select("#test_"+ name).remove();
+			return tickers;
+		}
 		wavelet.setAttackSpeed = function(second){
 			attack_speed = 1000 * second;
 			return wavelet;
@@ -79,6 +102,8 @@ var Wavelet = {
 				});
 			},attack_speed);
 		};
+
+
 
 		return wavelet;
 	}
