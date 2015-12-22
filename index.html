@@ -3,7 +3,7 @@
     <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
         <title>D3.js Charts</title>
-    <h2>上证50 Correlation Matrix</h2>
+    <h2>上证50 Correlation Matrix (It takes 10 seconds to start)</h2>
 	<script src="./d3.min.js"></script>
 	<script src="./wavelet.js"></script>
     </head>
@@ -23,8 +23,6 @@
 		user-select: none;
 		/* how to cancel mouseover*/
 	}
-	.cell {
-	}
 	.brush {
 		fill:purple;
 	}
@@ -40,7 +38,7 @@
   		fill: #eee;
   		stroke: #666;
 	}
-	.offselected {
+	 .offselected {
 		fill-opacity:0.3;
 		-webkit-transition: fill-opacity 250ms linear;
 
@@ -48,8 +46,8 @@
 	.selected{
 		fill-opacity:1.0;
 		-webkit-transition: fill-opacity 250ms linear;
-
 	}
+
 ?
 </style>
     <body>
@@ -68,33 +66,35 @@
 	    n = 50, //=sh50.length
 	    MaxS = 60,
 	    Ns = 10,
-	    sliceX2 = 3, //Measure Last 3 updates
-	    sliceY2 = 3;
+	    sliceX2 = 7, //Measure Last 3 updates
+	    sliceY2 = 7;
 
  	//Handcrafted 'code'
-	var sh50 = [600000,600010,600015,600016,600018,600028,600030,600036,600048,601006,601088,601118
+	var sh50 = ['sh000016',600000,600010,600015,600016,600018,600028,600030,600036,600048,601006,601088,601118
 				,600050,600089,600104,600109,600111,600150,600196,600256,600332,600372,600406,600518
 				,600519,600585,600637,600690,600703,600832,600999,600887,600837,601288,601169,601166
 				,601299,601318,601328,601628,601766,601901,601601,601688,601857,601998,601989,601818
-				,601668,601398]; 
+				,601668,601398,600298]; 
 
+	n = sh50.length;
 	//ri le gou le hai de handle 60 = sh, 00=sz why 000000 belongs to sh
 	var url = "http://hq.sinajs.cn/list=";
-    var matrix = [];
-    var wavelet1 = new Wavelet.createNew(50,MaxS,"a");
-    var	wavelet2 = new Wavelet.createNew(50,MaxS,"b");
+    var matrix = [], cumavg = [];
+    var wavelet1 = new Wavelet.createNew(n,MaxS,"a");
+    var	wavelet2 = new Wavelet.createNew(n,MaxS,"b");
 //   var tickers1,tickers2;
 
 	for(i = -1; ++i<n; ){
 		// Don t change the order of i,j, sexy bug
-    	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:Math.abs(Math.sin(i + j))};});
+    	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:0,avg:0};});
+    	cumavg[i] = d3.range(n).map(function(d){return 0;});
 	}
 
     var x = d3.scale.ordinal().rangeBands([0,width]),
     	y = d3.scale.ordinal().rangeBands([0,height]),
     	//colorbrewer2.0.org
         z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']).clamp(true); 
-
+        avg = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#ffffb2','#fecc5c','#fd8d3c','#f03b20','#bd0026']).clamp(true);
     // NoobCode101 skip these
     // var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     // var nums = "0123456789".split("");
@@ -104,13 +104,17 @@
 		matrix.forEach(function(d,i){
 			d.name = tickers[i];
 		});
-		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-
+		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-cb function
 	});
 
 	// Fire = real data
-    wavelet1.setAttackSpeed(5).setUrl(url).stimulate();//.fire(); 
+    //wavelet1.setAttackSpeed(2.9).setUrl(url).fire(); 
+    wavelet1.setAttackSpeed(2.9).setUrl(url).stimulate(); 
+
     wavelet2.injectCodes(sh50,function(tickers){});
-    wavelet2.setAttackSpeed(5).setUrl(url).stimulate();//.fire();
+    //wavelet2.setAttackSpeed(2.9).setUrl(url).fire();
+    wavelet2.setAttackSpeed(2.9).setUrl(url).stimulate();
+
 
 	//wrong
 	var orders = {
@@ -170,7 +174,6 @@
 		.attr("width",width)
 		.attr("height",height)
 
-//	redraw();
 
 	function redraw(){
 
@@ -219,7 +222,7 @@
 		     .attr('x', function(d,i){return x(d.x);})
 		     .attr('height',x.rangeBand())
 		     .attr('width',x.rangeBand())
-		     .style("fill",function(d){return z(d.z);})
+		     .style("fill",function(d){return '#000000';})
 		     .on("mouseover",mouseover)
 		     .on("mouseout",mouseout);
 }
@@ -244,6 +247,7 @@
   function mouseover(p){
     d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
     d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
+
   }
 
   function mouseout() {
@@ -266,22 +270,26 @@
   	});
   }
 
-//auto pull data 
+//auto pull data
+ var cumTick = 0; 
  var task = setInterval(function(){
-		updateZ(correlation);
+ 		cumTick++;
+		updateZ(correlation,cumTick);
 	},2000);
 
-	function updateZ(func){
+	function updateZ(func,cumTick){
 
 		var w1 = wavelet1.getData(sliceX2);
 		var w2 = wavelet2.getData(sliceY2);
 		w1.forEach(function(d,i){
 			w2.forEach(function(k,j){
-				matrix[i][j].z = func(d,k);
+
+				if (!isNaN(matrix[i][j].z = func(d,k)))
+					matrix[i][j].avg = (matrix[i][j].avg * (cumTick - 1) + matrix[i][j].z) / cumTick;
 			});
 		});
-
-		d3.selectAll(".cell").style("fill",function(d){return isNaN(matrix[d.x][d.y].z)? "#d7191c" : z(matrix[d.x][d.y].z);});
+		d3.selectAll(".cell").filter(function(d){return d.x > d.y;}).style("fill",function(d){return isNaN(matrix[d.x][d.y].z)? "#eee" : z(matrix[d.x][d.y].z);});
+		d3.selectAll(".cell").filter(function(d){return d.y > d.x;}).style("fill",function(d){return isNaN(matrix[d.x][d.y].avg)? "#eee" : z(matrix[d.x][d.y].avg);});
 	}
 //Module
 	function correlation(wave1,wave2){

@@ -88,7 +88,7 @@ var Wavelet = {
 				////////////
 				d3.select("head").append("script").attr("id","reload_"+name).attr("src",url).attr("onload",
 					function(){
-						console.log(name + "new data recieved");
+						console.log(name + " new data recieved");
 						buffer.forEach(function(d,i){
 							var s = eval("hq_str_"+codes[i]).split(","); 
 							d.push(+s[3]); //s[1] = open s[2] = close 
