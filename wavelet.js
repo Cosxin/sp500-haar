@@ -24,7 +24,6 @@ var Wavelet = {
 		var buffer = [];
 		var name = name;
 		var task = null;
-		var rcv = false;
 		console.log("wavelet " + name + " created");
 
 		for(i = -1; ++i < n;){
@@ -68,8 +67,11 @@ var Wavelet = {
 			return wavelet;
 		}
 		wavelet.setAttackSpeed = function(second){
+			if(second < 1) second = 1;
 			attack_speed = 1000 * second;
-			return wavelet;
+			if(!task) 
+				return wavelet;
+			return wavelet.stop().fire();
 		};
 		wavelet.setUrl = function(url){
 			baseurl = url;
@@ -81,19 +83,24 @@ var Wavelet = {
 			console.log(name + " started pull data from " + baseurl);
 			task = setInterval(function(){
 
-				d3.select("head").select("#reload_"+name).remove(); 
+				d3.select("head").select("#reload_"+ name).remove(); 
 				////////
 				// dont use same id
 				// or if wavelet 1 create a script, wavelet 2 can remove it imediately
 				////////////
-				d3.select("head").append("script").attr("id","reload_"+name).attr("src",url).attr("onload",
+				d3.select("head").append("script").attr("id","reload_" + name).attr("src",url).attr("onload",
 					function(){
 						console.log(name + " new data recieved");
 						buffer.forEach(function(d,i){
-							var s = eval("hq_str_"+codes[i]).split(","); 
-							d.push(+s[3]); //s[1] = open s[2] = close 
-							rcv = true;
-							d.shift();
+							var s = eval("hq_str_" + codes[i]).split(","); //potential bug
+							if( s == undefined){
+								d.push(d[d.length-1]);
+								d.shift();
+							}
+							else{
+								d.push(+s[3]); //s[1] = open s[2] = close 
+								d.shift();
+							}
 						});
 					});
 			},attack_speed);

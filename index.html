@@ -5,7 +5,8 @@
         <title>D3.js Charts</title>
     <h2>上证50 Correlation Matrix (It takes 10 seconds to start)</h2>
 	<script src="./d3.min.js"></script>
-	<script src="./wavelet.js"></script>
+	<script src="./Wavelet.js"></script>
+	<script type="text/javascript" src="./LineChartControl.js"></script>
     </head>
     <style>
     .background {
@@ -38,17 +39,29 @@
   		fill: #eee;
   		stroke: #666;
 	}
-	 .offselected {
+	.cell.highlighted{
+			stroke:black;
+			stroke-width:3px;
+	}
+	.cell.offselected {
 		fill-opacity:0.3;
 		-webkit-transition: fill-opacity 250ms linear;
-
 	}
-	.selected{
+	.cell.selected{
 		fill-opacity:1.0;
 		-webkit-transition: fill-opacity 250ms linear;
 	}
 
-?
+    .x.axis line {
+	  shape-rendering: auto;
+	}
+
+	.line {
+  		fill: none;
+  		stroke: #000;
+ 		stroke-width: 1.5px;
+	}
+
 </style>
     <body>
     
@@ -59,12 +72,12 @@
     var margin = {top:0,right:0,bottom:0,left:20},
     	width = 640,
     	height = 640,
-    	bwidth = 40,
-    	bheight = 40,
+    	bwidth = 50,
+    	bheight = 50,
     	awidth = 10,
     	aheight = 10,
 	    n = 50, //=sh50.length
-	    MaxS = 60,
+	    maxS = 60,
 	    Ns = 10,
 	    sliceX2 = 7, //Measure Last 3 updates
 	    sliceY2 = 7;
@@ -80,9 +93,9 @@
 	//ri le gou le hai de handle 60 = sh, 00=sz why 000000 belongs to sh
 	var url = "http://hq.sinajs.cn/list=";
     var matrix = [], cumavg = [];
-    var wavelet1 = new Wavelet.createNew(n,MaxS,"a");
-    var	wavelet2 = new Wavelet.createNew(n,MaxS,"b");
-//   var tickers1,tickers2;
+    var wavelet1 = new Wavelet.createNew(n,maxS,"a"),
+    	wavelet2 = new Wavelet.createNew(n,maxS,"b"),
+    	lineChartControl = new LineChartControl.createNew();
 
 	for(i = -1; ++i<n; ){
 		// Don t change the order of i,j, sexy bug
@@ -105,6 +118,7 @@
 			d.name = tickers[i];
 		});
 		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-cb function
+		lineChartControl.drawLineChart([0,0]);
 	});
 
 	// Fire = real data
@@ -115,6 +129,7 @@
     //wavelet2.setAttackSpeed(2.9).setUrl(url).fire();
     wavelet2.setAttackSpeed(2.9).setUrl(url).stimulate();
 
+	lineChartControl.binddata(wavelet1,wavelet2);
 
 	//wrong
 	var orders = {
@@ -139,6 +154,7 @@
 	var svg = d3.select('body').append('svg')
 	    .attr('width', width + margin.left + margin.right + bwidth)
 	    .attr('height', height + margin.top + margin.bottom + bheight)
+	    .attr("class","martixChart")
 	  .append('g')
 	    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -224,7 +240,16 @@
 		     .attr('width',x.rangeBand())
 		     .style("fill",function(d){return '#000000';})
 		     .on("mouseover",mouseover)
-		     .on("mouseout",mouseout);
+		     .on("mouseout",mouseout)
+		     .on("click",mouseclick);
+		 // var texts = d3.select(this).selectAll("text")
+		 // 	.data(row)
+		 // 	 .enter().append("text")
+		 // 	 .attr('transform', function(d,i){return 'translate(' + x(d.x) + ',' + 0 + ')';})
+		 // 	 .text(function(d,i){return d.z;})
+			//  .attr('font-size','9px' )
+			//  .attr('x', 1)
+			//  .attr('y', -1);
 }
 
   function order(value) {
@@ -247,13 +272,20 @@
   function mouseover(p){
     d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
     d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
+    
+    d3.selectAll(".cell").classed("highlighted",function(d,i){return d.x == p.y && d.y == p.x;});
+    d3.select(this).classed("highlighted",true); //cannot use selectAll...
 
   }
 
   function mouseout() {
     d3.selectAll("text").classed("active", false);
+    d3.selectAll(".cell").classed("highlighted",false);
   }
+  function mouseclick(){
 
+	}
+	
 
   function brushed(){
   	var x = brushX.extent();
@@ -307,26 +339,6 @@
 
 	}
 
-
-	/*
-	浦发银行 (600000)	包钢股份 (600010)	华夏银行 (600015)
-	民生银行 (600016)	上港集团 (600018)	中国石化 (600028)
-	中信证券 (600030)	招商银行 (600036)	保利地产 (600048)
-	中国联通 (600050)	特变电工 (600089)	上汽集团 (600104)
-	国金证券 (600109)	包钢稀土 (600111)	中国船舶 (600150)
-	复星医药 (600196)	广汇能源 (600256)	白云山 (600332)
-	中航电子 (600372)	国电南瑞 (600406)	康美药业 (600518)
-	贵州茅台 (600519)	海螺水泥 (600585)	百视通 (600637)
-	青岛海尔 (600690)	三安光电 (600703)	东方明珠 (600832)
-	海通证券 (600837)	伊利股份 (600887)	招商证券 (600999)
-	大秦铁路 (601006)	中国神华 (601088)	海南橡胶 (601118)
-	兴业银行 (601166)	北京银行 (601169)	农业银行 (601288)
-	！中国北车 (601299)！	中国平安 (601318)	交通银行 (601328)
-	工商银行 (601398)	中国太保 (601601)	中国人寿 (601628)
-	中国建筑 (601668)	华泰证券 (601688)	中国南车 (601766)
-	光大银行 (601818)	中国石油 (601857)	方正证券 (601901)
-	中国重工 (601989)	中信银行 (601998)
-	*/
 
 
     </script>
