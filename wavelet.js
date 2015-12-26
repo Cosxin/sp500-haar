@@ -24,13 +24,12 @@ var Wavelet = {
 		var buffer = [];
 		var name = name;
 		var task = null;
+		var tickers = [];
 		console.log("wavelet " + name + " created");
 
-		for(i = -1; ++i < n;){
-    		buffer[i] = d3.range(maxS).map(function(){return 0;});
-		}
+    	buffer = d3.range(n).map(function(){return d3.range(maxS).map(function(){return 0;});});
 
-		wavelet.injectCodes = function(code, cb){
+		wavelet.injectCodes = function(code, cb, do_analysis){
 			//customize
 			codes = code.map(function(d){
 				prefix = d.toString().substr(0,2);
@@ -39,12 +38,15 @@ var Wavelet = {
 				if(prefix == "30") return "sz" + d;
 				return d;
 			});
-			return wavelet.testCodes(codes,cb);
+			tickers = codes;
+			if(do_analysis)
+				return wavelet.testCodes(codes,cb);
+			cb(codes);
+			return wavelet;
 		};
-
 		wavelet.testCodes = function(code,cb){
 			var url = baseurl + codes.toString();
-			var tickers = []; 
+			if(DEBUG)
 			d3.select("head").append("script").attr("id","#test_"+ name).attr("src",url).attr("onload",
 				function(){
 					//need to Sync with matrix binding
@@ -117,17 +119,35 @@ var Wavelet = {
 			},attack_speed);
 			return wavelet;
 		};
-		wavelet.getData = function(k){
+		wavelet.getRows = function(lastSeconds){
 			//return last k data
-			if(k == undefined)
+			if(lastSeconds == undefined)
 				return buffer.map(function(d){return d;});
-			return buffer.map(function(d){return d.slice(-k);});
+			return buffer.map(function(d){return d.slice(-lastSeconds);});
+		};
+		wavelet.getColumns = function(indexes){
+
+			if(typeof(indexes) == typeof([]))
+				return d3.permute(buffer,indexes);
+			if(typeof(indexes) == typeof(1))
+				return buffer[indexes];
+			return undefined;
 		};
 
 		wavelet.stop = function(){
 			clearInterval(task);
 		};
+
+		wavelet.name = function(){
+			return name;
+		};
+		wavelet.tickers = function(i){
+			if(i == undefined) return tickers;
+			return tickers[i];
+		};
+
 		return wavelet;
+
 	}
 
 

@@ -4,7 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
         <title>D3.js Charts</title>
     <h2>上证50 Correlation Matrix (It takes 10 seconds to start)</h2>
-	<script src="./d3.min.js"></script>
+	<script src="./d3.js"></script>
 	<script src="./Wavelet.js"></script>
 	<script type="text/javascript" src="./LineChartControl.js"></script>
     </head>
@@ -90,7 +90,6 @@
 				,601668,601398,600298]; 
 
 	n = sh50.length;
-	//ri le gou le hai de handle 60 = sh, 00=sz why 000000 belongs to sh
 	var url = "http://hq.sinajs.cn/list=";
     var matrix = [], cumavg = [];
     var wavelet1 = new Wavelet.createNew(n,maxS,"a"),
@@ -98,48 +97,15 @@
     	lineChartControl = new LineChartControl.createNew();
 
 	for(i = -1; ++i<n; ){
-		// Don t change the order of i,j, sexy bug
     	matrix[i] = d3.range(n).map(function(j){return {x:j,y:i,z:0,avg:0};});
     	cumavg[i] = d3.range(n).map(function(d){return 0;});
 	}
 
-    var x = d3.scale.ordinal().rangeBands([0,width]),
-    	y = d3.scale.ordinal().rangeBands([0,height]),
+    var x = d3.scale.ordinal().rangeBands([0,width]).domain(d3.range(n)),
+    	y = d3.scale.ordinal().rangeBands([0,height]).domain(d3.range(n)),
     	//colorbrewer2.0.org
         z = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#1a9641','#a6d96a','#ffffbf','#fdae61','#d7191c']).clamp(true); 
         avg = d3.scale.linear().domain([-1,-0.7,0,+0.7,+1]).range(['#ffffb2','#fecc5c','#fd8d3c','#f03b20','#bd0026']).clamp(true);
-    // NoobCode101 skip these
-    // var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-    // var nums = "0123456789".split("");
-    // var alphanumeric = d3.range(n).map(function(d,i){return alphabet[Math.floor(i/10)] + nums[Math.floor(i%10)];});
-
-	wavelet1.injectCodes(sh50,function(tickers){
-		matrix.forEach(function(d,i){
-			d.name = tickers[i];
-		});
-		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-cb function
-		lineChartControl.drawLineChart([0,0]);
-	});
-
-	// Fire = real data
-    //wavelet1.setAttackSpeed(2.9).setUrl(url).fire(); 
-    wavelet1.setAttackSpeed(2.9).setUrl(url).stimulate(); 
-
-    wavelet2.injectCodes(sh50,function(tickers){});
-    //wavelet2.setAttackSpeed(2.9).setUrl(url).fire();
-    wavelet2.setAttackSpeed(2.9).setUrl(url).stimulate();
-
-	lineChartControl.binddata(wavelet1,wavelet2);
-
-	//wrong
-	var orders = {
-		name: d3.range(n).sort(function(a,b){return d3.ascending(matrix[a].name,matrix[b].name);}),
-		correlation_x:d3.range(n).sort(function(a,b){return matrix[a].x - matrix[b].x;}),
-		correlation_y:d3.range(n).sort(function(a,b){return matrix[a].y - matrix[b].y;}),
-		industry:d3.range(n).sort(function(a,b){return d3.ascending(matrix[a].industry , matrix[b].industry);})
-	};
-	x.domain(d3.range(n));
-	y.domain(d3.range(n));
 
     var bs = d3.scale.linear().domain([0,n]).rangeRound([0,width]);
 
@@ -189,6 +155,34 @@
 		.attr('class',"background")
 		.attr("width",width)
 		.attr("height",height)
+
+
+
+	lineChartControl.binddata(wavelet1,wavelet2);
+
+	wavelet1.injectCodes(sh50,function(tickers){
+		matrix.forEach(function(d,i){
+			d.name = tickers[i];
+		});
+		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-cb function
+		lineChartControl.drawLineChart([0,1]);
+	});
+
+	// Fire = real data
+    //wavelet1.setAttackSpeed(2.9).setUrl(url).fire(); 
+    wavelet1.setAttackSpeed(2.9).setUrl(url).stimulate(); 
+
+    wavelet2.injectCodes(sh50,function(tickers){});
+    //wavelet2.setAttackSpeed(2.9).setUrl(url).fire();
+    wavelet2.setAttackSpeed(2.9).setUrl(url).stimulate();
+
+	var orders = {
+		name: d3.range(n).sort(function(a,b){return d3.ascending(matrix[a].name,matrix[b].name);}),
+		correlation_x:d3.range(n).sort(function(a,b){return matrix[a].x - matrix[b].x;}),
+		correlation_y:d3.range(n).sort(function(a,b){return matrix[a].y - matrix[b].y;}),
+		industry:d3.range(n).sort(function(a,b){return d3.ascending(matrix[a].industry , matrix[b].industry);})
+	};
+
 
 
 	function redraw(){
@@ -311,8 +305,8 @@
 
 	function updateZ(func,cumTick){
 
-		var w1 = wavelet1.getData(sliceX2);
-		var w2 = wavelet2.getData(sliceY2);
+		var w1 = wavelet1.getRows(sliceX2);
+		var w2 = wavelet2.getRows(sliceY2);
 		w1.forEach(function(d,i){
 			w2.forEach(function(k,j){
 
