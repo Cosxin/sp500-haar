@@ -25,6 +25,7 @@ var Wavelet = {
 		var name = name;
 		var task = null;
 		var tickers = [];
+		var starttime = 0;
 		console.log("wavelet " + name + " created");
 
     	buffer = d3.range(n).map(function(){return d3.range(maxS).map(function(){return 0;});});
@@ -46,7 +47,6 @@ var Wavelet = {
 		};
 		wavelet.testCodes = function(code,cb){
 			var url = baseurl + codes.toString();
-			if(DEBUG)
 			d3.select("head").append("script").attr("id","#test_"+ name).attr("src",url).attr("onload",
 				function(){
 					//need to Sync with matrix binding
@@ -106,17 +106,24 @@ var Wavelet = {
 						});
 					});
 			},attack_speed);
+			starttime = Date.now();
 			return wavelet;
 		};
 		
-		wavelet.stimulate = function(){
+		wavelet.simulate = function(){
+
+			if(starttime > 0) clearInterval(task);
+
+			starttime = Date.now();
+
 			task = setInterval(function(){
 				console.log(name + "new data recieved");
 				buffer.forEach(function(d,i){
-					d.push(Math.random());
+					d.push(Math.sin(2 * Math.PI * (Date.now() - starttime) / 36000));
 					d.shift();
 				});
 			},attack_speed);
+
 			return wavelet;
 		};
 		wavelet.getRows = function(lastSeconds){
