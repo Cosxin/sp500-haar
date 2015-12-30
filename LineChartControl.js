@@ -14,15 +14,17 @@ var LineChartControl =  {
      var lc_data1 = d3.range(n).map(function(){return d3.range(maxS).map(function(){return 0.0;});});
      var lc_data2 = d3.range(n).map(function(){return d3.range(maxS).map(function(){return 0.0;});});
 
-     var transitions1 = d3.range(n).map(function(d,i){ return d3.select({}).transition().duration(750).ease("linear"); }),
-         transitions2 = d3.range(n).map(function(d,i){ return d3.select({}).transition().duration(750).ease("linear"); });
-
      var actives = [0,0];
 
      lineChartControl.binddata = function(w1,w2){
-        //Todo
         wavelet1 = w1;
         wavelet2 = w2;
+
+        //fill lc_data with current price
+        var wo1 = wavelet1.current();
+        var wo2 = wavelet2.current();
+        lc_data1 = d3.range(n).map(function(){return d3.range(maxS).map(function(d,i){return (wo1[i] + Math.random()) || Math.random();});});  // avoid min == max
+        lc_data2 = d3.range(n).map(function(){return d3.range(maxS).map(function(d,i){return (wo2[i] + Math.random()) || Math.random();});});  // avoid undefined
         return lineChartControl;
      };
 
@@ -30,7 +32,8 @@ var LineChartControl =  {
 
       actives = index_pair;
 
-      var margin = {top: 40, right: 0, bottom: 6, left: 30},
+
+      var margin = {top: 40, right: 0, bottom: 6, left: 60},
             width =  1024 - window.width - margin.right - margin.left,
             height = 690 - margin.top - margin.bottom;
 
@@ -47,17 +50,21 @@ var LineChartControl =  {
             .style("margin-top",margin.top)
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-      for (var i = -1; ++i < n;) {
+      var   transition1 = []
+            transition2 = [];
 
-          lineChart(i , 0, [0, maxS - 1], "basis", lc_data1[i], function tick(id ,path, line, data, x , y, x_axis, y_axis) {
+      for (var i = -1; ++i < 10;) {
 
-            transitions1[id] = transitions1[id].each(function(){
+          lineChart(i , 0, [0, maxS - 1], "basis", lc_data1[i], transition1[i] , function tick(id ,path, line, data, x , y, x_axis, y_axis, transition) {
+
+            transition = transition.each(function(){
 
               // push a new data point onto the back  
-              data.push(wavelet1.getColumns(id)[maxS - 1]);   
+              var nextd = wavelet1.getColumns(id)[maxS - 1];
+              data.push(nextd);   
               // redraw the line, and then slide it to the left
 
-              y.domain(d3.extent(data));
+              y.domain([0.95 * d3.min(data), 1.05 * d3.max(data)]);
             
               y_axis.call(y.axis);
 
@@ -70,18 +77,17 @@ var LineChartControl =  {
                 // pop the old data point off the front
                 data.shift();
 
-            }).transition().each("start",function(){tick(id,path,line,data,x,y, x_axis, y_axis);});
+            }).transition().each("start",function(){tick(id,path,line,data,x,y, x_axis, y_axis, transition);});
           });
 
-        lineChart(i, 1, [0, maxS - 1], "basis", lc_data2[i], function tick(id ,path, line, data, x , y, x_axis, y_axis) {
+        lineChart(i, 1, [0, maxS - 1], "basis", lc_data2[i], transition2[i], function tick(id ,path, line, data, x , y, x_axis, y_axis,transition) {
 
-          transitions2[id] = transitions2[id].each(function(){
+          transition = transition.each(function(){
 
             // push a new data point onto the back            
             data.push(wavelet2.getColumns(id)[maxS - 1]);
 
-            y.domain(d3.extent(data));
-
+            y.domain([0.9 * d3.min(data), 1.1 * d3.max(data)]);
             y_axis.call(y.axis);
             // redraw the line, and then slide it to the left
             path
@@ -93,29 +99,28 @@ var LineChartControl =  {
               // pop the old data point off the front
               data.shift();
 
-          }).transition().each("start",function(){tick(id,path,line,data,x,y,x_axis, y_axis);});
+          }).transition().each("start",function(){tick(id,path,line,data,x,y,x_axis, y_axis , transition);});
         });
     }
 
-      function lineChart(id, loc, domain, interpolation, lcdata, tick){
+      function lineChart(id, loc, domain, interpolation, lcdata, transition, tick, transition){
 
         var x = d3.scale.linear()
             .domain(domain)
-            .range([0,x_width]);
+            .range([0,x_width]).clamp(true);
 
         var y = d3.scale.linear()
             .domain([0, 1])
-            .range([y_height, 0]);
+            .range([y_height, 0]).clamp(true);
 
         var line = d3.svg.line()
             .interpolate(interpolation)
             .x(function(d, i) { return x(i); })
             .y(function(d, i) { return y(d); });
 
-        
         var chart = svg.append("g")
             .attr("class","linechart")
-            .attr("id","l"+id+"loc"+loc)
+            .attr("id","lc"+id+"loc"+loc)
             .style('display', function(){return (id == actives[0] && loc == 0) || (id == actives[1] && loc == 1) ? "inline":"none";})
             .attr("transform",
                 function(){return "translate(" + y_width + "," + (loc * (y_height + y_interval) + x_height) + ")";});
@@ -142,12 +147,15 @@ var LineChartControl =  {
             .attr("clip-path", "url(#clip)")
           .append("path")
             .data([lcdata])
-            .attr("class", "lc line")
+            //.attr("id", "line"+id)
             .attr("d", line)
             .style("fill","none")
             .style("stroke","#000");
+       
+        transition = d3.select(path).transition().duration(750).ease("linear");
 
-        tick(id, path, line, lcdata, x, y, x_axis, y_axis);
+
+        tick(id, path, line, lcdata, x, y, x_axis, y_axis, transition);
       }
 
       return lineChartControl;
@@ -157,8 +165,8 @@ var LineChartControl =  {
     lineChartControl.updateLineChart = function(index_pair){
       actives = index_pair;
       d3.selectAll(".linechart").style("display","none");
-      d3.select("#l"+index_pair[0]+"loc"+0).style("display","inline");
-      d3.select("#l"+index_pair[1]+"loc"+1).style("display","inline");
+      d3.select("#lc"+index_pair[0]+"loc"+0).style("display","inline");
+      d3.select("#lc"+index_pair[1]+"loc"+1).style("display","inline");
 
     };
 

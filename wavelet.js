@@ -22,6 +22,7 @@ var Wavelet = {
 		var baseurl = Wavelet.API.sina;
 		var codes = [];
 		var buffer = [];
+		var current = [];
 		var name = name;
 		var task = null;
 		var tickers = [];
@@ -39,9 +40,9 @@ var Wavelet = {
 				if(prefix == "30") return "sz" + d;
 				return d;
 			});
-			tickers = codes;
 			if(do_analysis)
 				return wavelet.testCodes(codes,cb);
+			tickers = codes.slice();
 			cb(codes);
 			return wavelet;
 		};
@@ -56,14 +57,14 @@ var Wavelet = {
 									codes.forEach(function(d,i){
 										var s = eval("hq_str_" + d).split(",");
 										tickers.push(s[0]);
-
+										current.push(s[1]);
 									});
 								}catch(e){
 									console.log(e);
-									tickers = code;
+									tickers = codes.slice();
 								}
 								cb(tickers);
-							}, 1000);
+							}, 1200);
 				});
 			d3.select("head").select("#test_"+ name).remove();
 			return wavelet;
@@ -95,7 +96,7 @@ var Wavelet = {
 						console.log(name + " new data recieved");
 						buffer.forEach(function(d,i){
 							var s = eval("hq_str_" + codes[i]).split(","); //potential bug
-							if( s == undefined){
+							if( s == undefined || s[3] == undefined){
 								d.push(d[d.length-1]);
 								d.shift();
 							}
@@ -152,7 +153,12 @@ var Wavelet = {
 			if(i == undefined) return tickers;
 			return tickers[i];
 		};
-
+		wavelet.current = function(){
+			return current;
+		};
+		wavelet.codes = function(){
+			return codes;
+		};
 		return wavelet;
 
 	}

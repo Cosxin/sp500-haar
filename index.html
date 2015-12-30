@@ -87,7 +87,7 @@
 				,600050,600089,600104,600109,600111,600150,600196,600256,600332,600372,600406,600518
 				,600519,600585,600637,600690,600703,600832,600999,600887,600837,601288,601169,601166
 				,601299,601318,601328,601628,601766,601901,601601,601688,601857,601998,601989,601818
-				,601668,601398,'justff']; 
+				,601668,601398,600298]; 
 	n = sh50.length;
 
 	var url = "http://hq.sinajs.cn/list=";
@@ -160,23 +160,24 @@
 
 
 
-	lineChartControl.binddata(wavelet1,wavelet2);
 
-	wavelet1.injectCodes(sh50,function(tickers1){  //!<---------------Make sure Codes are processed b4 drawChart
-		wavelet2.injectCodes(sh50,function(tickers2){
+	wavelet1.setUrl(url).injectCodes(sh50,function(tickers1){  //!<---------------Make sure Codes are processed b4 drawChart
+		wavelet2.setUrl(url).injectCodes(sh50,function(tickers2){
 			matrix.forEach(function(d,i){
 				d.rowname = tickers2[i];
 				d.colname = tickers1[i]; 
 			});
 		redraw(); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<-cb function
-		lineChartControl.drawLineChart([0,0]);
+		lineChartControl.binddata(wavelet1,wavelet2);
 		// Fire = real data
-		//wavelet1.setAttackSpeed(2.9).setUrl(url).fire(); 
+		//wavelet1.setAttackSpeed(2.9).fire(); 
     	wavelet1.setAttackSpeed(2.9).setUrl(url).simulate(); 
-        //wavelet2.setAttackSpeed(2.9).setUrl(url).fire();
+        //wavelet2.setAttackSpeed(2.9).fire();
    	    wavelet2.setAttackSpeed(2.9).setUrl(url).simulate();
-		});
-	});
+   	    lineChartControl.drawLineChart([1,1]);
+
+		},true);
+	},true);
 
 
 
