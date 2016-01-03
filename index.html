@@ -4,9 +4,10 @@
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
         <title>D3.js Charts</title>
     <h2>SH50 Correlation Matrix</h2>
-	<script src="./d3.js"></script>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
 	<script src="./Wavelet.js"></script>
-	<script type="text/javascript" src="./LineChartControl.js"></script>
+	<script src="./LineChartControl.js"></script>
+
     </head>
     <style>
     .background {
@@ -56,9 +57,29 @@
 	}
 
 
-</style>
+	</style>
     <body>
-    
+
+   <table style="width:50%">
+    	<tr>
+    	<td>Wavelet1:</td>
+    	<td>
+    		<input type="radio" name="wave1" id="rb1_s" checked/>simulate</td>
+    	<td>
+    		<input type="radio" name="wave1" id="rb1_r" />real data</td>
+    	<td>
+    		<input type="submit" value="Stop" id="submit1">
+    	</td>
+    	<tr>
+    	<td>Wavelet2:</td>
+    	<td>
+    		<input type="radio" name="wave2" id="rb2_s" checked/>simulate</td>
+    	<td>	
+    		<input type="radio" name="wave2" id="rb2_r" />real data</td>
+    	<td>
+    		<input type="submit" value="Stop" id="submit2"></td>
+    	</tr>
+    </table>
     </body>
 
     <script>
@@ -157,9 +178,6 @@
 		.attr('class',"background")
 		.attr("width",width)
 		.attr("height",height)
-
-
-
 
 	wavelet1.setUrl(url).injectCodes(sh50,function(tickers1){  //!<---------------Make sure Codes are processed b4 drawChart
 		wavelet2.setUrl(url).injectCodes(sh50,function(tickers2){
@@ -336,11 +354,28 @@
 			sum += (wave1[i] - mu1) * (wave2[i] - mu2);
 		return sum / ((d3.min([wave1.length,wave2.length]) - 1) * sig2 * sig1);
 	}
-	function haar(wave1,wave2){
-
-	}
 
 
+	d3.select("#submit1").on("click",function(){
+		if(d3.select(this).attr("value") == "Stop") {
+			d3.select(this).attr("value" , "Start");
+			wavelet1.stop();
+			return;
+		}
+		else if(d3.select("#rb1_s").node().checked) wavelet1.simulate();
+		else wavelet1.fire();
+		d3.select(this).attr("value","Stop");
+	});
+	d3.select("#submit2").on("click",function(){
+		if(d3.select(this).attr("value") == "Stop") {
+			d3.select(this).attr("value" , "Start");
+			wavelet2.stop();
+			return;
+		}
+		else if(d3.select("#rb2_s").node().checked) wavelet2.simulate();
+		else wavelet2.fire();
+		d3.select(this).attr("value","Stop");
+	});
 
     </script>
 </html>

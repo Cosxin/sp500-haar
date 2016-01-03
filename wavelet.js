@@ -83,6 +83,8 @@ var Wavelet = {
 		wavelet.fire = function(){
 			var url = baseurl + codes.toString();
 
+			if(starttime > 0) clearInterval(task);
+
 			console.log(name + " started pull data from " + baseurl);
 			task = setInterval(function(){
 
@@ -144,6 +146,7 @@ var Wavelet = {
 
 		wavelet.stop = function(){
 			clearInterval(task);
+			task = null;
 		};
 
 		wavelet.name = function(){

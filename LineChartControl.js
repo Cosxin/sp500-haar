@@ -23,8 +23,8 @@ var LineChartControl =  {
         //fill lc_data with current price
         var wo1 = wavelet1.current();
         var wo2 = wavelet2.current();
-        lc_data1 = d3.range(n).map(function(){return d3.range(maxS).map(function(d,i){return (wo1[i] + Math.random()) || Math.random();});});  // avoid min == max
-        lc_data2 = d3.range(n).map(function(){return d3.range(maxS).map(function(d,i){return (wo2[i] + Math.random()) || Math.random();});});  // avoid undefined
+        //lc_data1 = d3.range(n).map(function(){return d3.range(maxS).map(function(d,i){return (wo1[i] + Math.random()) || Math.random();});});  // avoid min == max
+        //lc_data2 = d3.range(n).map(function(){return d3.range(maxS).map(function(d,i){return (wo2[i] + Math.random()) || Math.random();});});  // avoid undefined
         return lineChartControl;
      };
 
@@ -33,15 +33,15 @@ var LineChartControl =  {
       actives = index_pair;
 
 
-      var margin = {top: 40, right: 0, bottom: 6, left: 60},
+      var margin = {top: 40, right: 0, bottom: 6, left: 40},
             width =  1024 - window.width - margin.right - margin.left,
             height = 690 - margin.top - margin.bottom;
 
-      var x_width = width,
-          x_height = 15,
+      var x_height = 15,
           y_height = 120,
-          y_width = 30,
-          y_interval = 50;
+          y_width = 60,
+          y_interval = 50,
+          x_width = width + y_width;
 
       var svg = d3.select("body").append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -53,7 +53,7 @@ var LineChartControl =  {
       var   transition1 = []
             transition2 = [];
 
-      for (var i = -1; ++i < 10;) {
+      for (var i = -1; ++i < n;) {
 
           lineChart(i , 0, [0, maxS - 1], "basis", lc_data1[i], transition1[i] , function tick(id ,path, line, data, x , y, x_axis, y_axis, transition) {
 
@@ -64,7 +64,7 @@ var LineChartControl =  {
               data.push(nextd);   
               // redraw the line, and then slide it to the left
 
-              y.domain([0.95 * d3.min(data), 1.05 * d3.max(data)]);
+              y.domain([0.99 * d3.min(data), 1.01 * d3.max(data)]);
             
               y_axis.call(y.axis);
 
@@ -87,7 +87,7 @@ var LineChartControl =  {
             // push a new data point onto the back            
             data.push(wavelet2.getColumns(id)[maxS - 1]);
 
-            y.domain([0.9 * d3.min(data), 1.1 * d3.max(data)]);
+            y.domain([0.99 * d3.min(data), 1.01 * d3.max(data)]);
             y_axis.call(y.axis);
             // redraw the line, and then slide it to the left
             path
